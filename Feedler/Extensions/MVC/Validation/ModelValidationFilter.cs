@@ -1,4 +1,4 @@
-﻿using Feedler.Extensions.MVC.ExceptionHandling;
+﻿using Feedler.Extensions.MVC.ExceptionHandling.Exceptions;
 using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace Feedler.Extensions.MVC.Validation

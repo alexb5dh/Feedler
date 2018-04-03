@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Feedler.Extensions.MVC.ExceptionHandling.Exceptions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -72,7 +73,7 @@ namespace Feedler.Extensions.MVC.ExceptionHandling
 
             await WriteErrorsResponse(context.Response,
                 _options.ForwardExceptions
-                    ? new HttpException { Message = exception.Message }
+                    ? new HttpException(exception.Message)
                     : new HttpException());
         }
 
