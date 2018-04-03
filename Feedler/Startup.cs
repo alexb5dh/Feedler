@@ -73,8 +73,8 @@ namespace Feedler
             if (context.Database.IsSqlServer())
             {
                 _logger.LogInformation("Applying migrations.");
-                context.Database.Migrate();
-                _logger.LogInformation("Finished applying migrations.");
+                var migrationTime = Timer.Time(() => context.Database.Migrate());
+                _logger.LogInformation($"Applied migrations in {migrationTime}.");
             }
 
             SeedConfigFeedsAsync(context).Await();
@@ -87,30 +87,33 @@ namespace Feedler
         {
             _logger.LogInformation("Seeding feed sources from config.");
 
-            // Todo: consider optimizing seeding to avoid loading all entities to memory
-            var addedFeeds = await context.Feeds.ToDictionaryAsync(f => f.Id);
-            foreach (var feed in _config.Seeding.Feeds)
+            var seedingTime = await Timer.TimeAsync(async () =>
             {
-                var addedFeed = addedFeeds.GetValueOrDefault(feed.Id);
-                if (addedFeed == null)
+                // Todo: consider optimizing seeding to avoid loading all entities to memory
+                var addedFeeds = await context.Feeds.ToDictionaryAsync(f => f.Id);
+                foreach (var feed in _config.Seeding.Feeds)
                 {
-                    context.Feeds.Add(feed);
+                    var addedFeed = addedFeeds.GetValueOrDefault(feed.Id);
+                    if (addedFeed == null)
+                    {
+                        context.Feeds.Add(feed);
 
-                    _logger.LogInformation($"Added feed \"{feed.Id}\".");
+                        _logger.LogInformation($"Added feed \"{feed.Id}\".");
+                    }
+                    else if (!feed.DeepEquals(addedFeed))
+                    {
+                        context.Feeds.Remove(addedFeed);
+                        context.Feeds.Add(feed);
+                        context.Entry(feed).State = EntityState.Modified;
+
+                        _logger.LogInformation($"Updated feed \"{feed.Id}\".");
+                    }
                 }
-                else if (!feed.DeepEquals(addedFeed))
-                {
-                    context.Feeds.Remove(addedFeed);
-                    context.Feeds.Add(feed);
-                    context.Entry(feed).State = EntityState.Modified;
 
-                    _logger.LogInformation($"Updated feed \"{feed.Id}\".");
-                }
-            }
+                await context.SaveChangesAsync();
+            });
 
-            await context.SaveChangesAsync();
-
-            _logger.LogInformation("Finished seeding feed sources from config.");
+            _logger.LogInformation($"Seeded feed sources in {seedingTime}.");
         }
     }
 }
