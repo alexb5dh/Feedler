@@ -109,7 +109,7 @@ namespace Feedler.Controllers
         {
             var collection = await _context.Collections.GetWithFeedsAsync(id);
 
-            var feed = collection.Feeds.FindById(feedId);
+            var feed = collection.Feeds.GetById(feedId);
             if (feed != null)
             {
                 collection.Feeds.Remove(feed);
